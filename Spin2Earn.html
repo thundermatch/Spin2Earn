@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Cat Spin to Earn</title>
+    
+    <!-- Monetag SDK -->
+    <script src='//libtl.com/sdk.js' data-zone='10491425' data-sdk='show_10491425'></script>
+    
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --primary: #b026ff;
+            --secondary: #4c1d95;
+            --accent: #00ffe5;
+            --gold: #ffd700;
+            --bg-dark: #120a2e;
+            --text: #ffffff;
+            --glass: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Fredoka', sans-serif;
+            background: linear-gradient(180deg, var(--bg-dark) 0%, #2a0e4a 100%);
+            color: var(--text);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- Desktop Blocker --- */
+        #desktop-warning {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #000;
+            z-index: 9999;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        @media (min-width: 768px) {
+            #desktop-warning { display: flex; }
+        }
+
+        /* --- Background Animation --- */
+        .bg-particles {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+        .particle {
+            position: absolute;
+            color: rgba(255,255,255,0.1);
+            font-size: 20px;
+            animation: floatUp 15s linear infinite;
+        }
+        @keyframes floatUp {
+            0% { transform: translateY(110vh) rotate(0deg); opacity: 0; }
+            50% { opacity: 0.5; }
+            100% { transform: translateY(-10vh) rotate(360deg); opacity: 0; }
+        }
+
+        /* --- Layout --- */
+        header {
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+            background: rgba(18, 10, 46, 0.8);
+            backdrop-filter: blur(10px);
+        }
+
+        .balance-pill {
+            background: rgba(0,0,0,0.5);
+            border: 2px solid var(--gold);
+            padding: 5px 15px;
+            border-radius: 50px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-weight: 700;
+            font-size: 16px;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+        }
+
+        main {
+            flex: 1;
+            position: relative;
+            z-index: 5;
+            overflow-y: auto;
+            padding-bottom: 80px; /* Space for footer */
+            display: flex;
+            flex-direction: column;
+        }
+
+        .view {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            padding: 20px;
+            animation: fadeIn 0.3s ease;
+        }
+        .view.active { display: flex; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- Wheel Styles --- */
+        .wheel-wrapper {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            margin: 30px auto;
+        }
+
+        .marker {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 50px;
+            background: var(--gold);
+            clip-path: polygon(50% 100%, 0 0, 100% 0);
+            z-index: 20;
+            filter: drop-shadow(0 0 5px var(--gold));
+        }
+
+        .wheel {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 8px solid var(--primary);
+            position: relative;
+            transition: transform 4s cubic-bezier(0.2, 0.8, 0.1, 1);
+            background: conic-gradient(
+                #ff5c8d 0deg 72deg,    /* 10 Coins (0.1% normalized for visual) */
+                #7b2cbf 72deg 144deg,  /* 3 Coins */
+                #9d4edd 144deg 216deg, /* 2 Coins */
+                #c77dff 216deg 288deg, /* 1 Coin */
+                #333333 288deg 360deg  /* No Reward */
+            );
+            box-shadow: 0 0 30px var(--primary);
+        }
+
+        /* Inner lines for segments */
+        .wheel::after {
+            content: '';
+            position: absolute;
+            top:0; left:0; width:100%; height:100%;
+            border-radius: 50%;
+            background: repeating-conic-gradient(
+                transparent 0deg 70deg,
+                rgba(0,0,0,0.2) 70deg 72deg
+            );
+        }
+
+        .cat-center {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80px; height: 80px;
+            background: #fff;
+            border-radius: 50%;
+            border: 4px solid var(--accent);
+            z-index: 10;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 40px;
+            box-shadow: 0 0 15px var(--accent);
+        }
+
+        /* --- Buttons --- */
+        .btn {
+            background: linear-gradient(45deg, #b026ff, #00ffe5);
+            border: none;
+            padding: 16px 40px;
+            border-radius: 50px;
+            color: #fff;
+            font-weight: 700;
+            font-size: 18px;
+            font-family: 'Fredoka', sans-serif;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+            box-shadow: 0 5px 20px rgba(176, 38, 255, 0.4);
+            cursor: pointer;
+            margin-top: 20px;
+            width: 80%;
+            max-width: 300px;
+            transition: transform 0.1s;
+        }
+        .btn:active { transform: scale(0.95); }
+        .btn:disabled { background: #555; box-shadow: none; opacity: 0.7; }
+
+        /* --- Crypto List --- */
+        .crypto-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+            width: 100%;
+            margin: 20px 0;
+        }
+        .crypto-card {
+            background: var(--glass);
+            border: 1px solid var(--secondary);
+            border-radius: 15px;
+            padding: 15px;
+            text-align: center;
+            transition: 0.2s;
+        }
+        .crypto-card.selected {
+            background: var(--primary);
+            border-color: var(--accent);
+            box-shadow: 0 0 15px var(--primary);
+        }
+
+        /* --- Forms --- */
+        .input-group { width: 100%; margin-bottom: 15px; text-align: left; }
+        .input-group label { display: block; margin-bottom: 5px; color: var(--accent); font-size: 14px; }
+        .input-field {
+            width: 100%;
+            padding: 14px;
+            border-radius: 10px;
+            border: 1px solid var(--secondary);
+            background: rgba(0,0,0,0.3);
+            color: #fff;
+            font-family: inherit;
+            outline: none;
+        }
+        .input-field:focus { border-color: var(--accent); }
+
+        /* --- Navigation --- */
+        nav {
+            position: fixed;
+            bottom: 0; left: 0; width: 100%;
+            height: 70px;
+            background: #1a0b36;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            z-index: 50;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        .nav-item {
+            color: rgba(255,255,255,0.5);
+            text-align: center;
+            font-size: 12px;
+            padding: 10px;
+            transition: 0.2s;
+        }
+        .nav-item i { font-size: 22px; margin-bottom: 4px; display: block; }
+        .nav-item.active { color: var(--accent); text-shadow: 0 0 10px var(--accent); }
+        .nav-item.active i { transform: translateY(-2px); }
+
+        /* --- Overlays --- */
+        #ad-loader {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .spinner {
+            width: 50px; height: 50px;
+            border: 5px solid rgba(255,255,255,0.3);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* Confetti Canvas */
+        #confetti {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 60;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Desktop Blocker -->
+    <div id="desktop-warning">
+        <i class="fas fa-mobile-alt" style="font-size: 50px; color: var(--accent); margin-bottom: 20px;"></i>
+        <h2>Mobile Only</h2>
+        <p>This app is designed for mobile Telegram only.<br>Please open on your phone.</p>
+    </div>
+
+    <!-- Ad Loader -->
+    <div id="ad-loader">
+        <div class="spinner"></div>
+        <p style="margin-top:15px; color: #fff;">Loading Ad...</p>
+    </div>
+
+    <!-- Background Effects -->
+    <div class="bg-particles" id="particles"></div>
+    <canvas id="confetti"></canvas>
+
+    <!-- Header -->
+    <header>
+        <div style="font-weight: 700; font-size: 20px;">
+            <i class="fas fa-cat" style="color: var(--primary)"></i> SpinCat
+        </div>
+        <div class="balance-pill">
+            <i class="fas fa-coins" style="color: var(--gold)"></i>
+            <span id="balance">0</span>
+        </div>
+    </header>
+
+    <main>
+        <!-- HOME PAGE -->
+        <div id="home-view" class="view active">
+            <h2 style="color: var(--accent); text-shadow: 0 0 10px var(--primary);">Spin to Earn</h2>
+            
+            <div class="wheel-wrapper">
+                <div class="marker"></div>
+                <div class="wheel" id="wheel"></div>
+                <div class="cat-center">🐱</div>
+            </div>
+
+            <button class="btn" id="spin-btn" onclick="handleSpin()">Spin to Earn</button>
+            <div id="result-msg" style="margin-top: 15px; min-height: 24px; font-weight: bold; color: var(--gold);"></div>
+        </div>
+
+        <!-- REFERRAL PAGE -->
+        <div id="ref-view" class="view">
+            <h2>Referral Program</h2>
+            <p style="text-align: center; color: #ccc;">Invite friends to get <span style="color: var(--gold)">+20 coins</span>!</p>
+            
+            <div style="background: var(--glass); padding: 20px; border-radius: 15px; width: 100%; margin-top: 20px; border: 1px solid var(--primary);">
+                <i class="fas fa-user-plus" style="font-size: 40px; color: var(--accent); display: block; text-align: center; margin-bottom: 15px;"></i>
+                
+                <div style="background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px; word-break: break-all; font-family: monospace; font-size: 12px; margin-bottom: 15px;" id="ref-link">
+                    Generating...
+                </div>
+                
+                <button class="btn" onclick="copyRef()" style="width: 100%; margin-top: 0; font-size: 16px;">Copy Link</button>
+                <div id="ref-msg" style="text-align: center; margin-top: 10px; font-size: 12px;"></div>
+            </div>
+        </div>
+
+        <!-- PAYOUT PAGE -->
+        <div id="payout-view" class="view">
+            <h2>Payout</h2>
+            
+            <div class="crypto-grid">
+                <div class="crypto-card" onclick="selectCoin('TRX', this)">
+                    <i class="fas fa-bolt" style="color: #ff0055; font-size: 24px;"></i><br>TRX
+                </div>
+                <div class="crypto-card" onclick="selectCoin('TON', this)">
+                    <i class="fas fa-gem" style="color: #0088cc; font-size: 24px;"></i><br>TON
+                </div>
+                <div class="crypto-card" onclick="selectCoin('LTC', this)">
+                    <i class="fas fa-coins" style="color: #ccc; font-size: 24px;"></i><br>LTC
+                </div>
+            </div>
+
+            <div id="payout-form" style="width: 100%; display: none; animation: fadeIn 0.3s ease;">
+                <h3 id="selected-coin-title" style="color: var(--gold); margin-top:0;">TRX Withdrawal</h3>
+                
+                <div class="input-group">
+                    <label>Wallet Address</label>
+                    <input type="text" class="input-field" placeholder="Paste address here">
+                </div>
+                
+                <div class="input-group">
+                    <label>Amount (Min 10,000 Coins)</label>
+                    <input type="number" id="amount-input" class="input-field" placeholder="10000" oninput="calcPayout()">
+                </div>
+
+                <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; margin-bottom: 15px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 14px;">
+                        <span>Fee:</span> <span>0.00</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-weight: bold; margin-top: 5px; color: var(--accent);">
+                        <span>You Receive:</span> <span id="receive-amt">0.00</span>
+                    </div>
+                </div>
+
+                <p style="color: #ff4757; font-size: 12px; margin-top: -10px;">⚠️ Incorrect wallet address = funds lost.</p>
+
+                <button class="btn" id="withdraw-btn" onclick="submitPayout()" disabled>Request Payout</button>
+                <p style="text-align: center; font-size: 12px; color: #888; margin-top: 10px;">Processing: 1–24 hours</p>
+            </div>
+        </div>
+    </main>
+
+    <nav>
+        <div class="nav-item active" onclick="nav('home')">
+            <i class="fas fa-home"></i> Home
+        </div>
+        <div class="nav-item" onclick="nav('ref')">
+            <i class="fas fa-user-friends"></i> Referral
+        </div>
+        <div class="nav-item" onclick="nav('payout')">
+            <i class="fas fa-wallet"></i> Payout
+        </div>
+    </nav>
+
+    <script>
+        // --- State Management ---
+        let balance = parseInt(localStorage.getItem('spinBalance')) || 0;
+        let refId = localStorage.getItem('spinRefId');
+        if(!refId) {
+            refId = Math.random().toString(36).substring(2, 10);
+            localStorage.setItem('spinRefId', refId);
+        }
+
+        const balanceEl = document.getElementById('balance');
+        const wheel = document.getElementById('wheel');
+        const spinBtn = document.getElementById('spin-btn');
+        const resultMsg = document.getElementById('result-msg');
+        
+        // Update UI Init
+        balanceEl.innerText = balance.toLocaleString();
+
+        // --- Particle Background ---
+        const icons = ['🪙', '💎', '💸', '✨'];
+        const particlesContainer = document.getElementById('particles');
+        for(let i=0; i<15; i++){
+            let el = document.createElement('div');
+            el.className = 'particle';
+            el.innerText = icons[Math.floor(Math.random()*icons.length)];
+            el.style.left = Math.random()*100 + '%';
+            el.style.animationDuration = (10 + Math.random()*10) + 's';
+            el.style.animationDelay = (Math.random()*10) + 's';
+            particlesContainer.appendChild(el);
+        }
+
+        // --- Navigation ---
+        function nav(viewId) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            
+            document.getElementById(viewId + '-view').classList.add('active');
+            
+            // Highlight Icon
+            const iconIndex = viewId === 'home' ? 0 : viewId === 'ref' ? 1 : 2;
+            document.querySelectorAll('.nav-item')[iconIndex].classList.add('active');
+        }
+
+        // --- Wheel Logic ---
+        // Normalizing Probabilities to fit 100% cleanly while respecting the user's intent:
+        // User asked: No Reward(39%), 1(50.9%), 2(10%), 3(10%), 10(0.1%) = 110%.
+        // Adjusted: No Reward(39%), 1(45.9%), 2(10%), 3(5%), 10(0.1%). Total 100%.
+        const segments = [
+            { label: '10 Coins', val: 10, prob: 0.001, deg: 36 },
+            { label: '3 Coins', val: 3, prob: 0.05, deg: 108 },
+            { label: '2 Coins', val: 2, prob: 0.10, deg: 180 },
+            { label: '1 Coin', val: 1, prob: 0.459, deg: 252 },
+            { label: 'No Reward', val: 0, prob: 0.39, deg: 324 }
+        ];
+
+        let isSpinning = false;
+        let currentRotation = 0;
+
+        function handleSpin() {
+            if(isSpinning) return;
+            
+            // 1. Show Ad Overlay
+            document.getElementById('ad-loader').style.display = 'flex';
+
+            // 2. Call Monetag
+            if (typeof show_10491425 === 'function') {
+                show_10491425().then(() => {
+                    document.getElementById('ad-loader').style.display = 'none';
+                    executeSpin();
+                }).catch(e => {
+                    // Ad failed/closed, proceed anyway
+                    console.log("Ad skipped/error", e);
+                    document.getElementById('ad-loader').style.display = 'none';
+                    executeSpin();
+                });
+            } else {
+                // Fallback for testing/no-ad
+                setTimeout(() => {
+                    document.getElementById('ad-loader').style.display = 'none';
+                    executeSpin();
+                }, 1500);
+            }
+        }
+
+        function executeSpin() {
+            isSpinning = true;
+            spinBtn.disabled = true;
+            resultMsg.innerText = "";
+
+            // Determine Result
+            let rand = Math.random();
+            let accumulated = 0;
+            let result = segments[4]; // Default to No Reward
+
+            for(let seg of segments) {
+                accumulated += seg.prob;
+                if(rand <= accumulated) {
+                    result = seg;
+                    break;
+                }
+            }
+
+            // Calculate Rotation
+            // We want the target segment to be at 0deg (Top)
+            // But CSS rotate moves CW. 
+            // Target degree in wheel definition is center of segment.
+            // 360 - seg.deg brings that segment to top.
+            // Add extra spins (360 * 5)
+            // Add jitter (+/- 15deg)
+            const extraSpins = 360 * 5;
+            const targetRotation = (360 - result.deg) + extraSpins + (Math.random() * 30 - 15);
+            
+            // Ensure we always rotate forward
+            const newRotation = currentRotation + targetRotation + (360 - (currentRotation % 360));
+            
+            wheel.style.transform = `rotate(${newRotation}deg)`;
+            currentRotation = newRotation;
+
+            // Wait for Animation
+            setTimeout(() => {
+                isSpinning = false;
+                spinBtn.disabled = false;
+                finalizeSpin(result);
+            }, 4000);
+        }
+
+        function finalizeSpin(segment) {
+            if(segment.val > 0) {
+                balance += segment.val;
+                updateBalanceUI();
+                resultMsg.innerText = `You won ${segment.val} Coins! Meow! 🐱`;
+                resultMsg.style.color = '#00ff00';
+                
+                // Haptic feedback
+                if(navigator.vibrate) navigator.vibrate(200);
+                
+                // Confetti for > 1 coin
+                if(segment.val > 1) fireConfetti();
+                
+            } else {
+                resultMsg.innerText = "No luck! Try again.";
+                resultMsg.style.color = '#ff4757';
+                if(navigator.vibrate) navigator.vibrate(50);
+            }
+        }
+
+        function updateBalanceUI() {
+            balanceEl.innerText = balance.toLocaleString();
+            localStorage.setItem('spinBalance', balance);
+            // Pop animation
+            balanceEl.parentElement.style.transform = "scale(1.1)";
+            setTimeout(() => balanceEl.parentElement.style.transform = "scale(1)", 200);
+        }
+
+        // --- Referral ---
+        document.getElementById('ref-link').innerText = `https://t.me/spintoearn1_bot?ref=${refId}`;
+        
+        function copyRef() {
+            navigator.clipboard.writeText(document.getElementById('ref-link').innerText);
+            document.getElementById('ref-msg').innerText = "Link copied! (Simulating friend join +20)";
+            document.getElementById('ref-msg').style.color = "#00ff00";
+            
+            // Simulation
+            setTimeout(() => {
+                balance += 20;
+                updateBalanceUI();
+                alert("New Referral! +20 Coins");
+            }, 2000);
+        }
+
+        // --- Payout ---
+        let selectedCrypto = '';
+        const MIN_COINS = 10000;
+        
+        function selectCoin(coin, el) {
+            selectedCrypto = coin;
+            document.querySelectorAll('.crypto-card').forEach(c => c.classList.remove('selected'));
+            el.classList.add('selected');
+            
+            document.getElementById('payout-form').style.display = 'block';
+            document.getElementById('selected-coin-title').innerText = `${coin} Withdrawal`;
+            document.getElementById('amount-input').value = '';
+            document.getElementById('receive-amt').innerText = `0.00 ${coin}`;
+            document.getElementById('withdraw-btn').disabled = true;
+        }
+
+        function calcPayout() {
+            const val = parseInt(document.getElementById('amount-input').value) || 0;
+            const btn = document.getElementById('withdraw-btn');
+            
+            // Formula: (Amount / 10000) * 10
+            const payout = (val / 10000) * 10;
+            document.getElementById('receive-amt').innerText = `${payout.toFixed(2)} ${selectedCrypto}`;
+
+            if(val >= MIN_COINS && val <= balance) {
+                btn.disabled = false;
+            } else {
+                btn.disabled = true;
+            }
+        }
+
+        function submitPayout() {
+            const val = parseInt(document.getElementById('amount-input').value);
+            if(confirm(`Withdraw ${val} coins?`)) {
+                balance -= val;
+                updateBalanceUI();
+                document.getElementById('payout-form').style.display = 'none';
+                document.querySelectorAll('.crypto-card').forEach(c => c.classList.remove('selected'));
+                alert("Withdrawal submitted successfully!");
+            }
+        }
+
+        // --- Confetti Utility ---
+        function fireConfetti() {
+            const c = document.getElementById('confetti');
+            const ctx = c.getContext('2d');
+            c.width = window.innerWidth;
+            c.height = window.innerHeight;
+            
+            let pieces = [];
+            for(let i=0; i<100; i++){
+                pieces.push({
+                    x: Math.random() * c.width,
+                    y: Math.random() * c.height - c.height,
+                    color: `hsl(${Math.random()*360}, 100%, 50%)`,
+                    size: Math.random() * 8 + 4,
+                    speed: Math.random() * 5 + 2
+                });
+            }
+
+            function draw() {
+                ctx.clearRect(0,0,c.width,c.height);
+                let active = false;
+                pieces.forEach(p => {
+                    if(p.y < c.height) {
+                        active = true;
+                        p.y += p.speed;
+                        ctx.fillStyle = p.color;
+                        ctx.fillRect(p.x, p.y, p.size, p.size);
+                    }
+                });
+                if(active) requestAnimationFrame(draw);
+            }
+            draw();
+        }
+
+    </script>
+</body>
+</html>
